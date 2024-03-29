@@ -3,6 +3,6 @@
 Aplikacja do obługi strzelania na telefon, w ramach zaliczenia przedmiotu inżynieria oprogramowania
 
 ## Contributores
-Maciej Kuziemko
 Dawid Lorentowicz
+Maciej Kuziemko
 Krzysztof Bednarek
