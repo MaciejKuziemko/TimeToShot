@@ -1,4 +1,4 @@
-package com.google.firebase.quickstart.auth.kotlin
+package com.example.aplikacja.timetoshot.kotlin
 
 import android.os.Bundle
 import android.text.TextUtils
@@ -14,8 +14,9 @@ import com.google.firebase.auth.FirebaseAuthMultiFactorException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.google.firebase.Firebase
-import com.google.firebase.quickstart.auth.R
-import com.google.firebase.quickstart.auth.databinding.FragmentEmailpasswordBinding
+import com.example.aplikacja.timetoshot.R
+import com.example.aplikacja.timetoshot.databinding.FragmentEmailpasswordBinding
+import com.example.aplikacja.timetoshot.kotlin.BaseFragment
 
 class EmailPasswordFragment : BaseFragment() {
 
@@ -48,7 +49,6 @@ class EmailPasswordFragment : BaseFragment() {
                 createAccount(email, password)
             }
             signOutButton.setOnClickListener { signOut() }
-            verifyEmailButton.setOnClickListener { sendEmailVerification() }
             reloadButton.setOnClickListener { reload() }
         }
 
@@ -119,7 +119,6 @@ class EmailPasswordFragment : BaseFragment() {
                         Toast.LENGTH_SHORT,
                     ).show()
                     updateUI(null)
-                    checkForMultiFactorFailure(task.exception!!)
                 }
 
                 if (!task.isSuccessful) {
@@ -132,34 +131,6 @@ class EmailPasswordFragment : BaseFragment() {
     private fun signOut() {
         auth.signOut()
         updateUI(null)
-    }
-
-    private fun sendEmailVerification() {
-        // Disable button
-        binding.verifyEmailButton.isEnabled = false
-
-        // Send verification email
-        val user = auth.currentUser!!
-        user.sendEmailVerification()
-            .addOnCompleteListener(requireActivity()) { task ->
-                // Re-enable button
-                binding.verifyEmailButton.isEnabled = true
-
-                if (task.isSuccessful) {
-                    Toast.makeText(
-                        context,
-                        "Verification email sent to ${user.email} ",
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                } else {
-                    Log.e(TAG, "sendEmailVerification", task.exception)
-                    Toast.makeText(
-                        context,
-                        "Failed to send verification email.",
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
-            }
     }
 
     private fun reload() {
@@ -202,19 +173,12 @@ class EmailPasswordFragment : BaseFragment() {
             binding.status.text = getString(
                 R.string.emailpassword_status_fmt,
                 user.email,
-                user.isEmailVerified,
             )
             binding.detail.text = getString(R.string.firebase_status_fmt, user.uid)
 
             binding.emailPasswordButtons.visibility = View.GONE
             binding.emailPasswordFields.visibility = View.GONE
             binding.signedInButtons.visibility = View.VISIBLE
-
-            if (user.isEmailVerified) {
-                binding.verifyEmailButton.visibility = View.GONE
-            } else {
-                binding.verifyEmailButton.visibility = View.VISIBLE
-            }
         } else {
             binding.status.setText(R.string.signed_out)
             binding.detail.text = null
@@ -225,20 +189,6 @@ class EmailPasswordFragment : BaseFragment() {
         }
     }
 
-    private fun checkForMultiFactorFailure(e: Exception) {
-        // Multi-factor authentication with SMS is currently only available for
-        // Google Cloud Identity Platform projects. For more information:
-        // https://cloud.google.com/identity-platform/docs/android/mfa
-        if (e is FirebaseAuthMultiFactorException) {
-            Log.w(TAG, "multiFactorFailure", e)
-            val resolver = e.resolver
-            val args = bundleOf(
-                MultiFactorSignInFragment.EXTRA_MFA_RESOLVER to resolver
-            )
-            findNavController().navigate(R.id.action_emailpassword_to_mfasignin, args)
-        }
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -246,6 +196,5 @@ class EmailPasswordFragment : BaseFragment() {
 
     companion object {
         private const val TAG = "EmailPassword"
-        private const val RC_MULTI_FACTOR = 9005
     }
 }
