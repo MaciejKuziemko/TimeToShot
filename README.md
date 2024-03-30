@@ -10,4 +10,4 @@ Aplikacja do obługi strzelania na telefon, w ramach zaliczenia przedmiotu inży
 # Description
 Aplikacja będzie mierzyła ile wystrzalów padlo podczas strzelania oraz analizowała będzie dane dla użytkownika
 Apliakcja korzysta z bazy danych firebase. Przystosowana do Android 8.1 
-2024
+2024 semestr letni
