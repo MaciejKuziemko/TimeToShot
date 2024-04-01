@@ -1,0 +1,12 @@
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/EmailPasswordFragment"
+    android:id="@+id/nav_graph_kotlin">
+    <fragment
+        android:id="@+id/EmailPasswordFragment"
+        android:name="com.example.aplikacja.timetoshot.kotlin.EmailPasswordFragment"
+        tools:layout="@layout/fragment_emailpassword">
+    </fragment>
+</navigation>

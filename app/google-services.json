@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "671942802443",
+    "project_id": "time-to-shoot-542de",
+    "storage_bucket": "time-to-shoot-542de.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:671942802443:android:5ea27e3daac1b964a29b0e",
+        "android_client_info": {
+          "package_name": "com.example.aplikacja.timetoshot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "671942802443-deqd9lgp8gpqjc3fn5trs26m0lgp0otn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEYvtUpMExA8ewt1QvANmjbEpUlKb8jJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "671942802443-deqd9lgp8gpqjc3fn5trs26m0lgp0otn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
