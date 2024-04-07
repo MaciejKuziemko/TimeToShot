@@ -8,5 +8,17 @@
         android:id="@+id/EmailPasswordFragment"
         android:name="com.example.aplikacja.timetoshot.kotlin.EmailPasswordFragment"
         tools:layout="@layout/fragment_emailpassword">
+        <action
+            android:id="@+id/action_main"
+            app:destination="@id/MainFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/MainFragment"
+        android:name="com.example.aplikacja.timetoshot.kotlin.MainFragment"
+        tools:layout="@layout/fragment_main">
+        <action
+            android:id="@+id/action_emailpassword"
+            app:destination="@id/EmailPasswordFragment"/>
     </fragment>
 </navigation>
