@@ -1,5 +1,8 @@
 package com.example.aplikacja.timetoshot.kotlin
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.util.Log
@@ -7,6 +10,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
@@ -14,6 +19,8 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
+
+private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
 class MainFragment : BaseFragment() {
 
@@ -38,16 +45,22 @@ class MainFragment : BaseFragment() {
         // Buttons
         with(binding) {
             startRecordingButton.setOnClickListener {
-                //mediaRecorder = MediaRecorder()
-                mediaRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
-                mediaRecorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                mediaRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                if (hasPermissions(requireContext())) {
+                    //mediaRecorder = MediaRecorder()
+                    mediaRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
+                    mediaRecorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                    mediaRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
 
-                mediaRecorder?.prepare()
-                mediaRecorder?.start()
+                    mediaRecorder?.prepare()
+                    mediaRecorder?.start()
 
-                startRecordingButton.isEnabled = false
-                stopRecordingButton.isEnabled = true
+                    startRecordingButton.isEnabled = false
+                    stopRecordingButton.isEnabled = true
+                }else{
+                    permReqLauncher.launch(
+                        PERMISSIONS_REQUIRED
+                    )
+                }
             }
             stopRecordingButton.setOnClickListener {
                 mediaRecorder?.stop()
@@ -63,6 +76,22 @@ class MainFragment : BaseFragment() {
 
         // Initialize Firebase Auth
         auth = Firebase.auth
+    }
+
+    private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
+        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
+    private val permReqLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val granted = permissions.entries.all {
+                it.value
+            }
+            if (granted) {
+                displayMainFragment()
+            }
+        }
+    private fun displayMainFragment() {
+
     }
 
     public override fun onStart() {
