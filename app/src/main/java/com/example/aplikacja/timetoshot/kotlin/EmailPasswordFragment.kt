@@ -27,7 +27,6 @@ class EmailPasswordFragment : BaseFragment() {
         _binding = FragmentEmailpasswordBinding.inflate(inflater, container, false)
         return binding.root
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -52,7 +51,6 @@ class EmailPasswordFragment : BaseFragment() {
         // Initialize Firebase Auth
         auth = Firebase.auth
     }
-
     public override fun onStart() {
         super.onStart()
         // Check if user is signed in (non-null) and update UI accordingly.
