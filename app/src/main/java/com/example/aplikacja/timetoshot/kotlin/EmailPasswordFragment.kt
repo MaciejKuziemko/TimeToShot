@@ -7,16 +7,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthMultiFactorException
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
-import com.google.firebase.Firebase
 import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentEmailpasswordBinding
-import com.example.aplikacja.timetoshot.kotlin.BaseFragment
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.auth
 
 class EmailPasswordFragment : BaseFragment() {
 
@@ -30,7 +27,6 @@ class EmailPasswordFragment : BaseFragment() {
         _binding = FragmentEmailpasswordBinding.inflate(inflater, container, false)
         return binding.root
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -55,7 +51,6 @@ class EmailPasswordFragment : BaseFragment() {
         // Initialize Firebase Auth
         auth = Firebase.auth
     }
-
     public override fun onStart() {
         super.onStart()
         // Check if user is signed in (non-null) and update UI accordingly.
@@ -170,15 +165,7 @@ class EmailPasswordFragment : BaseFragment() {
     private fun updateUI(user: FirebaseUser?) {
         hideProgressBar()
         if (user != null) {
-            binding.status.text = getString(
-                R.string.emailpassword_status_fmt,
-                user.email,
-            )
-            binding.detail.text = getString(R.string.firebase_status_fmt, user.uid)
-
-            binding.emailPasswordButtons.visibility = View.GONE
-            binding.emailPasswordFields.visibility = View.GONE
-            binding.signedInButtons.visibility = View.VISIBLE
+            findNavController().navigate(R.id.action_main)
         } else {
             binding.status.setText(R.string.signed_out)
             binding.detail.text = null

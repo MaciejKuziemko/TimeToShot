@@ -13,4 +13,7 @@
     <string name="sign_out">Sign Out</string>
     <string name="verify_email">Verify</string>
     <string name="reload">Reload</string>
+    <string name="main_menu">MAIN MENU</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
 </resources>
