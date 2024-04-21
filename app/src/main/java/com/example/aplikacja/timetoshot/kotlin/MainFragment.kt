@@ -24,7 +24,6 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import java.util.concurrent.atomic.AtomicBoolean
 
-
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
 class MainFragment : BaseFragment() {
@@ -36,20 +35,13 @@ class MainFragment : BaseFragment() {
         get() = _binding!!
 
     private val SAMPLING_RATE_IN_HZ = 44100
-
     private val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-
     private val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-
     private val BUFFER_SIZE_FACTOR = 2
-
     private val BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLING_RATE_IN_HZ, CHANNEL_CONFIG, AUDIO_FORMAT) * BUFFER_SIZE_FACTOR
-
     private val recordingInProgress = AtomicBoolean(false)
-
     private var recorder: AudioRecord? = null
 
-    private val recordingThread: Thread? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         return binding.root
@@ -60,35 +52,54 @@ class MainFragment : BaseFragment() {
 
         setProgressBar(binding.progressBar)
 
-        var startTime:Long=0
-        var status =0
-        // Buttons
+        var startTime: Long = 0
+        var lastShotTime: Long = 0  // Czas ostatniego strzału
+        var firstShotTime: Long = -1 // Czas pierwszego strzału
+        var status = 0
+
         with(binding) {
             recordingButton.setOnClickListener {
                 if (hasPermissions(requireContext())) {
                     if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                         return@setOnClickListener
                     }
-                    if (status==0){
-                        startTime=System.currentTimeMillis()
+                    if (status == 0) {
+                        startTime = System.currentTimeMillis()
                         recorder = AudioRecord(MediaRecorder.AudioSource.DEFAULT, SAMPLING_RATE_IN_HZ, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE)
                         recorder?.startRecording()
-                        result.text="Trwa strzelanie!"
-                        recordingButton.setText("Stop recording")
-                        status=1
+                        requireActivity().runOnUiThread {
+                            result.text = "Trwa strzelanie!"
+                            recordingButton.text = "Stop recording"
+                        }
+                        status = 1
+                    } else if (status == 1) {
+                        val audioData = ShortArray(BUFFER_SIZE)
+                        val bytesRead = recorder?.read(audioData, 0, BUFFER_SIZE)
+
+                        if (bytesRead != AudioRecord.ERROR_BAD_VALUE && bytesRead != AudioRecord.ERROR_INVALID_OPERATION) {
+                            val detectionResult = detectClaps(audioData)
+
+                            val stopTime = System.currentTimeMillis()
+                            val recordTime = (stopTime - startTime) / 1000
+
+                            requireActivity().runOnUiThread {
+                                recordingButton.text = "Start recording"
+                                result.text = "Czas nagrania ${recordTime}s, liczba strzałów: ${detectionResult.clapsCount}"
+
+                                if (detectionResult.firstShotTime != -1L) {
+                                    firstShotTime = detectionResult.firstShotTime
+                                    result.text = "Czas nagrania ${recordTime}s, liczba strzałów: ${detectionResult.clapsCount}, pierwszy strzał po ${firstShotTime - startTime}ms"
+                                }
+                            }
+                            recorder?.stop()
+                            recorder?.release()  // Zwolnienie zasobów AudioRecord
+                            status = 0
+                        } else {
+                            Log.e(TAG, "Error reading audio data")
+                        }
                     }
-                    else if(status==1){
-                        recorder?.stop()
-                        var stopTime=System.currentTimeMillis()
-                        var recordTime=(stopTime-startTime)/1000
-                        recordingButton.setText("Start recording")
-                        result.text="Czas nagrania ${recordTime}s"
-                        status=0
-                    }
-                }else{
-                    permReqLauncher.launch(
-                        PERMISSIONS_REQUIRED
-                    )
+                } else {
+                    permReqLauncher.launch(PERMISSIONS_REQUIRED)
                 }
             }
             signOutButton.setOnClickListener { signOut() }
@@ -101,22 +112,22 @@ class MainFragment : BaseFragment() {
     private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
-    private val permReqLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            val granted = permissions.entries.all {
-                it.value
-            }
-            if (granted) {
-                displayMainFragment()
-            }
-        }
-    private fun displayMainFragment() {
 
+    private val permReqLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val granted = permissions.entries.all {
+            it.value
+        }
+        if (granted) {
+            displayMainFragment()
+        }
+    }
+
+    private fun displayMainFragment() {
+        // Możesz dodać tutaj dodatkową logikę po uzyskaniu wszystkich uprawnień
     }
 
     public override fun onStart() {
         super.onStart()
-        // Check if user is signed in (non-null) and update UI accordingly.
         val currentUser = auth.currentUser
         if (currentUser != null) {
             reload()
@@ -143,13 +154,46 @@ class MainFragment : BaseFragment() {
     private fun updateUI(user: FirebaseUser?) {
         hideProgressBar()
         if (user != null) {
-
             binding.signedInButtons.visibility = View.VISIBLE
         } else {
-
             binding.signedInButtons.visibility = View.GONE
         }
     }
+
+    private fun detectClaps(data: ShortArray): DetectionResult {
+        // Parametry analizy ramkowej
+        val frameSize = 1024  // Rozmiar ramki
+        val overlap = frameSize / 2  // Przesunięcie ramki
+        val frames = data.size / overlap - 1  // Ilość ramek
+
+        // Prog do wykrywania klaśnięcia
+        val energyThreshold = 100000  // Próg energii dla klaśnięcia
+
+        var clapsCount = 0
+        var firstShotTime: Long = -1
+
+        for (i in 0 until frames) {
+            var energy = 0L
+            for (j in 0 until frameSize) {
+                val index = i * overlap + j
+                if (index < data.size) {
+                    val sample = data[index].toInt()
+                    energy += sample * sample
+                }
+            }
+            if (energy > energyThreshold && firstShotTime == -1L) {
+                firstShotTime = System.currentTimeMillis()
+            }
+
+            if (energy > energyThreshold) {
+                clapsCount++
+            }
+        }
+
+        return DetectionResult(clapsCount, firstShotTime)
+    }
+
+    private data class DetectionResult(val clapsCount: Int, val firstShotTime: Long)
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -159,58 +203,4 @@ class MainFragment : BaseFragment() {
     companion object {
         private const val TAG = "EmailPassword"
     }
-
-    /*
-        class NoiseRecorder {
-            private val TAG: String = SoundOfTheCityConstants.TAG
-
-            @get:Throws(NoValidNoiseLevelException::class)
-            val noiseLevel: Double
-                get() {
-                    Logging.e(TAG, "start new recording process")
-                    var bufferSize = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT)
-                    //making the buffer bigger....
-                    bufferSize = bufferSize * 4
-                    val recorder = AudioRecord(MediaRecorder.AudioSource.MIC, 44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
-                    val data = ShortArray(bufferSize)
-                    var average = 0.0
-                    recorder.startRecording()
-                    //recording data;
-                    recorder.read(data, 0, bufferSize)
-                    recorder.stop()
-                    Logging.e(TAG, "stop")
-                    for (s in data) {
-                        if (s > 0) {
-                            average += abs(s.toDouble())
-                        } else {
-                            bufferSize--
-                        }
-                    }
-                    //x=max;
-                    val x = average / bufferSize
-                    Logging.e(TAG, "" + x)
-                    recorder.release()
-                    Logging.d(TAG, "getNoiseLevel() ")
-                    var db = 0.0
-                    if (x == 0.0) {
-                        val e = NoValidNoiseLevelException(x)
-                        throw e
-                    }
-                    val pressure =
-                        x / 51805.5336
-                    Logging.d(TAG, "x=$pressure Pa")
-                    db = 20 * log10(pressure / REFERENCE)
-                    Logging.d(TAG, "db=$db")
-                    if (db > 0) {
-                        return db
-                    }
-                    val e = NoValidNoiseLevelException(x)
-                    throw e
-                }
-
-            companion object {
-                var REFERENCE = 0.00002
-            }
-        }
-    */
 }
