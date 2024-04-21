@@ -73,6 +73,7 @@ class MainFragment : BaseFragment() {
                         startTime=System.currentTimeMillis()
                         recorder = AudioRecord(MediaRecorder.AudioSource.DEFAULT, SAMPLING_RATE_IN_HZ, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE)
                         recorder?.startRecording()
+                        result.text="Trwa strzelanie!"
                         recordingButton.setText("Stop recording")
                         status=1
                     }
@@ -159,57 +160,57 @@ class MainFragment : BaseFragment() {
         private const val TAG = "EmailPassword"
     }
 
-/*
-    class NoiseRecorder {
-        private val TAG: String = SoundOfTheCityConstants.TAG
+    /*
+        class NoiseRecorder {
+            private val TAG: String = SoundOfTheCityConstants.TAG
 
-        @get:Throws(NoValidNoiseLevelException::class)
-        val noiseLevel: Double
-            get() {
-                Logging.e(TAG, "start new recording process")
-                var bufferSize = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT)
-                //making the buffer bigger....
-                bufferSize = bufferSize * 4
-                val recorder = AudioRecord(MediaRecorder.AudioSource.MIC, 44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
-                val data = ShortArray(bufferSize)
-                var average = 0.0
-                recorder.startRecording()
-                //recording data;
-                recorder.read(data, 0, bufferSize)
-                recorder.stop()
-                Logging.e(TAG, "stop")
-                for (s in data) {
-                    if (s > 0) {
-                        average += abs(s.toDouble())
-                    } else {
-                        bufferSize--
+            @get:Throws(NoValidNoiseLevelException::class)
+            val noiseLevel: Double
+                get() {
+                    Logging.e(TAG, "start new recording process")
+                    var bufferSize = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT)
+                    //making the buffer bigger....
+                    bufferSize = bufferSize * 4
+                    val recorder = AudioRecord(MediaRecorder.AudioSource.MIC, 44100, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
+                    val data = ShortArray(bufferSize)
+                    var average = 0.0
+                    recorder.startRecording()
+                    //recording data;
+                    recorder.read(data, 0, bufferSize)
+                    recorder.stop()
+                    Logging.e(TAG, "stop")
+                    for (s in data) {
+                        if (s > 0) {
+                            average += abs(s.toDouble())
+                        } else {
+                            bufferSize--
+                        }
                     }
-                }
-                //x=max;
-                val x = average / bufferSize
-                Logging.e(TAG, "" + x)
-                recorder.release()
-                Logging.d(TAG, "getNoiseLevel() ")
-                var db = 0.0
-                if (x == 0.0) {
+                    //x=max;
+                    val x = average / bufferSize
+                    Logging.e(TAG, "" + x)
+                    recorder.release()
+                    Logging.d(TAG, "getNoiseLevel() ")
+                    var db = 0.0
+                    if (x == 0.0) {
+                        val e = NoValidNoiseLevelException(x)
+                        throw e
+                    }
+                    val pressure =
+                        x / 51805.5336
+                    Logging.d(TAG, "x=$pressure Pa")
+                    db = 20 * log10(pressure / REFERENCE)
+                    Logging.d(TAG, "db=$db")
+                    if (db > 0) {
+                        return db
+                    }
                     val e = NoValidNoiseLevelException(x)
                     throw e
                 }
-                val pressure =
-                    x / 51805.5336
-                Logging.d(TAG, "x=$pressure Pa")
-                db = 20 * log10(pressure / REFERENCE)
-                Logging.d(TAG, "db=$db")
-                if (db > 0) {
-                    return db
-                }
-                val e = NoValidNoiseLevelException(x)
-                throw e
-            }
 
-        companion object {
-            var REFERENCE = 0.00002
+            companion object {
+                var REFERENCE = 0.00002
+            }
         }
-    }
-*/
+    */
 }
