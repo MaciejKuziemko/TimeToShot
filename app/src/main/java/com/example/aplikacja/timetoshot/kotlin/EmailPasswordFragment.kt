@@ -45,7 +45,6 @@ class EmailPasswordFragment : BaseFragment() {
                 createAccount(email, password)
             }
             signOutButton.setOnClickListener { signOut() }
-            reloadButton.setOnClickListener { reload() }
         }
 
         // Initialize Firebase Auth
@@ -55,9 +54,6 @@ class EmailPasswordFragment : BaseFragment() {
         super.onStart()
         // Check if user is signed in (non-null) and update UI accordingly.
         val currentUser = auth.currentUser
-        if (currentUser != null) {
-            reload()
-        }
     }
 
     private fun createAccount(email: String, password: String) {
@@ -128,18 +124,6 @@ class EmailPasswordFragment : BaseFragment() {
         updateUI(null)
     }
 
-    private fun reload() {
-        auth.currentUser!!.reload().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                updateUI(auth.currentUser)
-                Toast.makeText(context, "Reload successful!", Toast.LENGTH_SHORT).show()
-            } else {
-                Log.e(TAG, "reload", task.exception)
-                Toast.makeText(context, "Failed to reload user.", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     private fun validateForm(): Boolean {
         var valid = true
 
@@ -158,7 +142,6 @@ class EmailPasswordFragment : BaseFragment() {
         } else {
             binding.fieldPassword.error = null
         }
-
         return valid
     }
 
