@@ -7,6 +7,8 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
 class MainFragment : BaseFragment() {
+
     companion object {
         private const val emailPasswordTAG = "EmailPassword"
         const val mainTAG = "MainFragment"
@@ -133,27 +136,48 @@ class MainFragment : BaseFragment() {
         Log.d(mainTAG, "Recording stopped.")
     }
 
+    var firstShotTime=0L
+    var shotCounter=0
     private fun recordAudio(bufferSize: Int) {
         val buffer = ShortArray(bufferSize / 2)
-
+        val startTime=System.currentTimeMillis()
         while (isRecording) {
             val read = audioRecord!!.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
             if (read < 0) {
                 Log.e(mainTAG, "Error reading audio.")
                 return
             }
-            val rms = calculateRMS(buffer)
-            Log.d(mainTAG, "Loudness: $rms")
+            val pair = calculateRMS(buffer)
+            firstShotTime=pair.first
+            shotCounter=pair.second
+        }
+        if(firstShotTime!=0L){
+            firstShotTime-=startTime
+        }
+        val stopTime=System.currentTimeMillis()
+        val recordTime=stopTime-startTime
+        Handler(Looper.getMainLooper()).post {
+            binding.result.text =
+                "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
+            shotCounter = 0
+            firstShotTime = 0L
         }
     }
 
-    private fun calculateRMS(buffer: ShortArray): Double {
+    private fun calculateRMS(buffer: ShortArray): Pair<Long,Int> {
         var sum = 0.0
         for (sample in buffer) {
             sum += sample * sample
         }
         val rms = Math.sqrt(sum / buffer.size)
-        return rms
+        Log.d(mainTAG,"loudness:$rms")
+        if(rms>3000){
+            shotCounter++
+            if(firstShotTime==0L){
+            firstShotTime=System.currentTimeMillis()
+            }
+        }
+        return Pair(firstShotTime,shotCounter)
     }
 
     private fun updateButtonLabel() {
@@ -162,33 +186,6 @@ class MainFragment : BaseFragment() {
             recordingButton.text = label
         }
     }
-    /*
-
-
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_main, container, false)
-
-        val startButton = view.findViewById<Button>(R.id.start_button)
-        val stopButton = view.findViewById<Button>(R.id.stop_button)
-
-        startButton.setOnClickListener {
-            startRecording()
-        }
-
-        stopButton.setOnClickListener {
-            stopRecording()
-        }
-
-        return view
-    }
-}
-
-     */
 
     private val permReqLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val granted = permissions.entries.all {
