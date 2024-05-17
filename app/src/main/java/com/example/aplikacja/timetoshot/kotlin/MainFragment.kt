@@ -7,22 +7,22 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
@@ -43,6 +43,10 @@ class MainFragment : BaseFragment() {
     private val binding: FragmentMainBinding
         get() = _binding!!
 
+    private var startTime = 0L
+    private var pauseStartTime = 0L
+    private var totalPauseTime = 0L
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -56,6 +60,7 @@ class MainFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setProgressBar(binding.progressBar)
+        auth = Firebase.auth
 
         with(binding) {
             recordingButton.setOnClickListener {
@@ -68,7 +73,8 @@ class MainFragment : BaseFragment() {
                         return@setOnClickListener
                     }
                     if (isRecording) {
-                        stopRecording()
+                        pauseStartTime = System.currentTimeMillis()
+                        showStopRecordingConfirmation()
                     } else {
                         startRecording()
                     }
@@ -76,12 +82,11 @@ class MainFragment : BaseFragment() {
                 } else {
                     permReqLauncher.launch(PERMISSIONS_REQUIRED)
                 }
-                signOutButton.setOnClickListener { signOut() }
-                // Initialize Firebase Auth
             }
-            auth = Firebase.auth
-            }
+
+            signOutButton.setOnClickListener { signOut() }
         }
+    }
 
     private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
@@ -116,6 +121,7 @@ class MainFragment : BaseFragment() {
 
         if (audioRecord!!.state == AudioRecord.STATE_INITIALIZED) {
             isRecording = true
+            startTime = System.currentTimeMillis()
             audioRecord!!.startRecording()
             Thread {
                 recordAudio(bufferSize)
@@ -126,19 +132,57 @@ class MainFragment : BaseFragment() {
         }
     }
 
-    private fun stopRecording() {
-        isRecording = false
-        audioRecord?.stop()
-        audioRecord?.release()
-        audioRecord = null
-        Log.d(mainTAG, "Recording stopped.")
+    private fun showStopRecordingConfirmation() {
+        val builder = AlertDialog.Builder(requireContext())
+        val dialogView = layoutInflater.inflate(R.layout.dialog_buttons, null)
+        builder.setView(dialogView)
+            .setTitle("Confirmation")
+            .setMessage("Are you sure you want to stop shooting?")
+
+        val dialog = builder.create()
+
+        val positiveButton: Button = dialogView.findViewById(R.id.positiveButton)
+        val negativeButton: Button = dialogView.findViewById(R.id.negativeButton)
+
+        positiveButton.setOnClickListener {
+            totalPauseTime += System.currentTimeMillis() - pauseStartTime
+            stopRecording()
+            dialog.dismiss()
+        }
+
+        negativeButton.setOnClickListener {
+            totalPauseTime += System.currentTimeMillis() - pauseStartTime
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
-    var firstShotTime=0L
-    var shotCounter=0
+
+    private fun stopRecording() {
+        if (isRecording) {
+            isRecording = false
+            audioRecord?.stop()
+            audioRecord?.release()
+            audioRecord = null
+            Log.d(mainTAG, "Recording stopped.")
+            updateButtonLabel() // Dodaj aktualizację przycisku
+
+            val stopTime = System.currentTimeMillis()
+            val recordTime = stopTime - startTime - totalPauseTime
+            binding.result.text = "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
+            shotCounter = 0
+            firstShotTime = 0L
+            totalPauseTime = 0L
+        } else {
+            Log.d(mainTAG, "Recording already stopped.")
+        }
+    }
+
+    private var firstShotTime = 0L
+    private var shotCounter = 0
     private fun recordAudio(bufferSize: Int) {
         val buffer = ShortArray(bufferSize / 2)
-        val startTime=System.currentTimeMillis()
         while (isRecording) {
             val read = audioRecord!!.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
             if (read < 0) {
@@ -146,43 +190,33 @@ class MainFragment : BaseFragment() {
                 return
             }
             val pair = calculateRMS(buffer)
-            firstShotTime=pair.first
-            shotCounter=pair.second
-        }
-        if(firstShotTime!=0L){
-            firstShotTime-=startTime
-        }
-        val stopTime=System.currentTimeMillis()
-        val recordTime=stopTime-startTime
-        Handler(Looper.getMainLooper()).post {
-            binding.result.text =
-                "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
-            shotCounter = 0
-            firstShotTime = 0L
+            firstShotTime = pair.first
+            shotCounter = pair.second
         }
     }
 
-    private fun calculateRMS(buffer: ShortArray): Pair<Long,Int> {
+    private fun calculateRMS(buffer: ShortArray): Pair<Long, Int> {
         var sum = 0.0
         for (sample in buffer) {
             sum += sample * sample
         }
         val rms = Math.sqrt(sum / buffer.size)
-        Log.d(mainTAG,"loudness:$rms")
-        if(rms>3000){
+        Log.d(mainTAG, "loudness:$rms")
+        if (rms > 3000) {
             shotCounter++
-            if(firstShotTime==0L){
-            firstShotTime=System.currentTimeMillis()
+            if (firstShotTime == 0L) {
+                firstShotTime = System.currentTimeMillis()
             }
         }
-        return Pair(firstShotTime,shotCounter)
+        return Pair(firstShotTime, shotCounter)
     }
 
     private fun updateButtonLabel() {
         val label = if (isRecording) "Stop Recording" else "Start Recording"
+        val shootingText = if (isRecording) "Shooting!!!" else "Start Shooting"
         with(binding) {
             recordingButton.text = label
-
+            result.text = shootingText
         }
     }
 
@@ -202,6 +236,7 @@ class MainFragment : BaseFragment() {
     public override fun onStart() {
         super.onStart()
         val currentUser = auth.currentUser
+        updateUI(currentUser)
     }
 
     private fun signOut() {
