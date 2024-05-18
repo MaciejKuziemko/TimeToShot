@@ -1,6 +1,7 @@
 package com.example.aplikacja.timetoshot.kotlin
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -21,6 +22,12 @@ import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
@@ -92,12 +99,22 @@ class MainFragment : BaseFragment() {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 
+    @SuppressLint("SetTextI18n")
     private fun startRecording() {
         if (isRecording) {
             Log.d(mainTAG, "Already recording.")
             return
         }
 
+        var stopC=4
+        CoroutineScope(Dispatchers.Main).launch {
+            while (stopC>=0) {
+                binding.result.text = "Strzelanie rozpocznie się za $stopC"
+                delay(1000)
+                stopC--
+            }
+            binding.result.text = "Recording started"
+        }
         val bufferSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO,
@@ -126,7 +143,6 @@ class MainFragment : BaseFragment() {
             Thread {
                 recordAudio(bufferSize)
             }.start()
-            Log.d(mainTAG, "Recording started.")
         } else {
             Log.e(mainTAG, "Failed to initialize AudioRecord.")
         }
