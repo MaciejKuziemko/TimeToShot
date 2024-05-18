@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
@@ -85,7 +86,6 @@ class MainFragment : BaseFragment() {
                     } else {
                         startRecording()
                     }
-                    updateButtonLabel()
                 } else {
                     permReqLauncher.launch(PERMISSIONS_REQUIRED)
                 }
@@ -101,50 +101,47 @@ class MainFragment : BaseFragment() {
 
     @SuppressLint("SetTextI18n")
     private fun startRecording() {
-        if (isRecording) {
-            Log.d(mainTAG, "Already recording.")
-            return
-        }
-
+        binding.recordingButton.isVisible=false
         var stopC=4
         CoroutineScope(Dispatchers.Main).launch {
-            while (stopC>=0) {
+            while (stopC >= 0) {
                 binding.result.text = "Strzelanie rozpocznie się za $stopC"
                 delay(1000)
                 stopC--
             }
             binding.result.text = "Recording started"
-        }
-        val bufferSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        Log.d(mainTAG, "$bufferSize.")
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            bufferSize
-        )
+            binding.recordingButton.isVisible=true
+            binding.recordingButton.text="Stop recording"
 
-        if (audioRecord!!.state == AudioRecord.STATE_INITIALIZED) {
-            isRecording = true
-            startTime = System.currentTimeMillis()
-            audioRecord!!.startRecording()
-            Thread {
-                recordAudio(bufferSize)
-            }.start()
-        } else {
-            Log.e(mainTAG, "Failed to initialize AudioRecord.")
+            val bufferSize = AudioRecord.getMinBufferSize(
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            Log.d(mainTAG, "$bufferSize.")
+            if (ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.RECORD_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) return@launch
+            audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+
+            if (audioRecord!!.state == AudioRecord.STATE_INITIALIZED) {
+                isRecording = true
+                startTime = System.currentTimeMillis()
+                audioRecord!!.startRecording()
+                Thread {
+                    recordAudio(bufferSize)
+                }.start()
+            } else {
+                Log.e(mainTAG, "Failed to initialize AudioRecord.")
+            }
         }
     }
 
@@ -182,10 +179,13 @@ class MainFragment : BaseFragment() {
             audioRecord?.release()
             audioRecord = null
             Log.d(mainTAG, "Recording stopped.")
-            updateButtonLabel() // Dodaj aktualizację przycisku
+            binding.recordingButton.text="Start recording"
 
             val stopTime = System.currentTimeMillis()
             val recordTime = stopTime - startTime - totalPauseTime
+            if(firstShotTime!=0L){
+            firstShotTime-=startTime}
+            else firstShotTime=0L
             binding.result.text = "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
             shotCounter = 0
             firstShotTime = 0L
@@ -225,15 +225,6 @@ class MainFragment : BaseFragment() {
             }
         }
         return Pair(firstShotTime, shotCounter)
-    }
-
-    private fun updateButtonLabel() {
-        val label = if (isRecording) "Stop Recording" else "Start Recording"
-        val shootingText = if (isRecording) "Shooting!!!" else "Start Shooting"
-        with(binding) {
-            recordingButton.text = label
-            result.text = shootingText
-        }
     }
 
     private val permReqLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
