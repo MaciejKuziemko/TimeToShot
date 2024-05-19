@@ -23,14 +23,12 @@ import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
@@ -91,9 +89,18 @@ class MainFragment : BaseFragment() {
                 }
             }
 
+
             signOutButton.setOnClickListener { signOut() }
+            infoIcon.setOnClickListener {
+                showInformationDialog()
+            }
+
+            exitAppButton.setOnClickListener {
+                showExitConfirmationDialog()
+            }
         }
     }
+
 
     private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
@@ -190,6 +197,8 @@ class MainFragment : BaseFragment() {
             shotCounter = 0
             firstShotTime = 0L
             totalPauseTime = 0L
+            binding.saveDataButton.visibility = View.VISIBLE
+
         } else {
             Log.d(mainTAG, "Recording already stopped.")
         }
@@ -249,6 +258,30 @@ class MainFragment : BaseFragment() {
     private fun signOut() {
         auth.signOut()
         findNavController().navigate(R.id.action_emailpassword)
+    }
+
+    private fun showExitConfirmationDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Exit Confirmation")
+            .setMessage("Are you sure you want to exit the application?")
+            .setPositiveButton("Yes") { dialog, which ->
+                // Zamknięcie aplikacji po kliknięciu "Yes"
+                requireActivity().finish()
+            }
+            .setNegativeButton("No") { dialog, which ->
+                // Anulowanie zamknięcia aplikacji po kliknięciu "No"
+                dialog.dismiss()
+            }
+        builder.show()
+    }
+    private fun showInformationDialog() {
+        val dialogMessage = "You can try your shooting skills with us. Click start, when you are ready to shoot. We can track your first shot and show you when you got your first target down"
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("How it works?")
+            .setMessage(dialogMessage)
+            .setPositiveButton("OK", null)
+        val dialog = builder.create()
+        dialog.show()
     }
 
     private fun updateUI(user: FirebaseUser?) {
