@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.util.Log
@@ -46,6 +47,8 @@ class MainFragment : BaseFragment() {
     private lateinit var auth: FirebaseAuth
 
     private var _binding: FragmentMainBinding? = null
+
+    private var mediaPlayer: MediaPlayer? = null
     private val binding: FragmentMainBinding
         get() = _binding!!
 
@@ -113,6 +116,9 @@ class MainFragment : BaseFragment() {
         CoroutineScope(Dispatchers.Main).launch {
             while (stopC >= 0) {
                 binding.result.text = "Strzelanie rozpocznie się za $stopC"
+
+                playCountdownBeep()
+
                 delay(1000)
                 stopC--
             }
@@ -282,6 +288,14 @@ class MainFragment : BaseFragment() {
             .setPositiveButton("OK", null)
         val dialog = builder.create()
         dialog.show()
+    }
+    private fun playCountdownBeep() {
+        mediaPlayer?.release() // Zwolnij poprzedni MediaPlayer, jeśli istnieje
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.countdown_beep)
+        mediaPlayer?.start()
+        mediaPlayer?.setOnCompletionListener {
+            it.release() // Zwolnij zasoby po zakończeniu odtwarzania
+        }
     }
 
     private fun updateUI(user: FirebaseUser?) {
