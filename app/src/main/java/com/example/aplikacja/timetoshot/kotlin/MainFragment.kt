@@ -21,15 +21,15 @@ import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.example.aplikacja.timetoshot.R
 import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
@@ -37,7 +37,6 @@ private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 class MainFragment : BaseFragment() {
 
     companion object {
-        private const val emailPasswordTAG = "EmailPassword"
         const val mainTAG = "MainFragment"
         const val SAMPLE_RATE = 8000
     }
@@ -46,6 +45,14 @@ class MainFragment : BaseFragment() {
     private var isRecording = false
 
     private lateinit var auth: FirebaseAuth
+    val db = Firebase.firestore
+    data class Shots(
+        val data: Timestamp? = null,
+        val firstShotTime: Long? = null,
+        val recordTime: Long? = null,
+        val numberOfShots: Int? = null,
+        val avgShotsPerTime: Long? = null
+    )
 
     private var _binding: FragmentMainBinding? = null
     private val binding: FragmentMainBinding
@@ -184,9 +191,18 @@ class MainFragment : BaseFragment() {
             val stopTime = System.currentTimeMillis()
             val recordTime = stopTime - startTime - totalPauseTime
             if(firstShotTime!=0L){
-            firstShotTime-=startTime}
+                firstShotTime-=startTime}
             else firstShotTime=0L
             binding.result.text = "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
+            val avgShotPerTime=shotCounter/recordTime
+            val shot=Shots(Timestamp.now(),firstShotTime,recordTime,shotCounter,avgShotPerTime)
+            db.collection("shots")
+                .add(shot).addOnSuccessListener { documentReference ->
+                    println("DocumentSnapshot added with ID: ${documentReference.id}")
+                }
+                .addOnFailureListener { e ->
+                    println("Error adding document $e")
+                }
             shotCounter = 0
             firstShotTime = 0L
             totalPauseTime = 0L
