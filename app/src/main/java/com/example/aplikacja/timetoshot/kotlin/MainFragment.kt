@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.util.Log
@@ -24,6 +25,9 @@ import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -55,6 +59,8 @@ class MainFragment : BaseFragment() {
     )
 
     private var _binding: FragmentMainBinding? = null
+
+    private var mediaPlayer: MediaPlayer? = null
     private val binding: FragmentMainBinding
         get() = _binding!!
 
@@ -98,9 +104,18 @@ class MainFragment : BaseFragment() {
                 }
             }
 
+
             signOutButton.setOnClickListener { signOut() }
+            infoIcon.setOnClickListener {
+                showInformationDialog()
+            }
+
+            exitAppButton.setOnClickListener {
+                showExitConfirmationDialog()
+            }
         }
     }
+
 
     private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
@@ -113,6 +128,9 @@ class MainFragment : BaseFragment() {
         CoroutineScope(Dispatchers.Main).launch {
             while (stopC >= 0) {
                 binding.result.text = "Strzelanie rozpocznie się za $stopC"
+
+                playCountdownBeep()
+
                 delay(1000)
                 stopC--
             }
@@ -206,6 +224,8 @@ class MainFragment : BaseFragment() {
             shotCounter = 0
             firstShotTime = 0L
             totalPauseTime = 0L
+            binding.saveDataButton.visibility = View.VISIBLE
+
         } else {
             Log.d(mainTAG, "Recording already stopped.")
         }
@@ -265,6 +285,38 @@ class MainFragment : BaseFragment() {
     private fun signOut() {
         auth.signOut()
         findNavController().navigate(R.id.action_emailpassword)
+    }
+
+    private fun showExitConfirmationDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Exit Confirmation")
+            .setMessage("Are you sure you want to exit the application?")
+            .setPositiveButton("Yes") { dialog, which ->
+                // Zamknięcie aplikacji po kliknięciu "Yes"
+                requireActivity().finish()
+            }
+            .setNegativeButton("No") { dialog, which ->
+                // Anulowanie zamknięcia aplikacji po kliknięciu "No"
+                dialog.dismiss()
+            }
+        builder.show()
+    }
+    private fun showInformationDialog() {
+        val dialogMessage = "You can try your shooting skills with us. Click start, when you are ready to shoot. We can track your first shot and show you when you got your first target down"
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("How it works?")
+            .setMessage(dialogMessage)
+            .setPositiveButton("OK", null)
+        val dialog = builder.create()
+        dialog.show()
+    }
+    private fun playCountdownBeep() {
+        mediaPlayer?.release() // Zwolnij poprzedni MediaPlayer, jeśli istnieje
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.countdown_beep)
+        mediaPlayer?.start()
+        mediaPlayer?.setOnCompletionListener {
+            it.release() // Zwolnij zasoby po zakończeniu odtwarzania
+        }
     }
 
     private fun updateUI(user: FirebaseUser?) {

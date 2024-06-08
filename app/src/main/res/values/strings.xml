@@ -16,4 +16,5 @@
     <string name="main_menu">MAIN MENU</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
+    <string name="info_icon_description">Opis ikony informacji</string>
 </resources>

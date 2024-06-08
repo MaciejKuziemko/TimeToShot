@@ -16,6 +16,17 @@
         android:visibility="invisible"
         style="?android:attr/progressBarStyleHorizontal"/>
 
+    <ImageView
+        android:id="@+id/infoIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="16dp"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_info"
+        android:contentDescription="@string/info_icon_description" />
+
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -43,26 +54,53 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/title_bottom_margin"
             android:theme="@style/ThemeOverlay.MyTitleText" />
+        <Button
+            android:id="@+id/saveDataButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save Data"
+            android:visibility="gone" />
     </LinearLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingTop="16dp"
+        android:paddingTop="40dp"
         android:background="@color/grey_300"
         android:gravity="center_vertical">
 
         <Button
             android:id="@+id/signOutButton"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:text="@string/sign_out"
             android:theme="@style/ThemeOverlay.MyDarkButton"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/viewShotsButtonNextToSignOut"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
             tools:ignore="MissingConstraints"
-            tools:layout_editor_absoluteY="16dp" />
+            tools:layout_editor_absoluteY="59dp" />
+
+        <Button
+            android:id="@+id/viewShotsButtonNextToSignOut"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="History"
+            app:layout_constraintStart_toEndOf="@id/signOutButton"
+            app:layout_constraintEnd_toStartOf="@id/exitAppButton"
+            tools:layout_editor_absoluteY="59dp"
+            android:layout_marginStart="2dp"/>
+
+        <Button
+            android:id="@+id/exitAppButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Exit"
+            app:layout_constraintStart_toEndOf="@id/viewShotsButtonNextToSignOut"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="59dp"
+            android:layout_marginStart="2dp"/>/>
 
         <androidx.constraintlayout.widget.Group
             android:id="@+id/signedInButtons"
@@ -71,4 +109,6 @@
             android:visibility="visible"
             app:constraint_referenced_ids="signOutButton" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 </LinearLayout>
