@@ -26,6 +26,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.PropertyName
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,12 +49,23 @@ class MainFragment : BaseFragment() {
     private lateinit var auth: FirebaseAuth
     val db = Firebase.firestore
     data class Shots(
-        val data: Timestamp? = null,
-        val firstShotTime: Long? = null,
-        val recordTime: Long? = null,
-        val numberOfShots: Long? = null,
-        val avgTimePerShot: Double? = null
-    )
+        @get:PropertyName("data") @set:PropertyName("data") var data: Timestamp? = null,
+        @get:PropertyName("firstShotTime") @set:PropertyName("firstShotTime") var firstShotTime: Long? = null,
+        @get:PropertyName("recordTime") @set:PropertyName("recordTime") var recordTime: Long? = null,
+        @get:PropertyName("numberOfShots") @set:PropertyName("numberOfShots") var numberOfShots: Long? = null,
+        @get:PropertyName("avgTimePerShot") @set:PropertyName("avgTimePerShot") var avgTimePerShot: Double? = null,
+    ){
+        companion object {
+            val dateComparator: Comparator<Shots> = Comparator { o1, o2 ->
+                when {
+                    o1.data == null && o2.data == null -> 0
+                    o1.data == null -> 1
+                    o2.data == null -> -1
+                    else -> o1.data!!.compareTo(o2.data!!)
+                }
+            }
+        }
+    }
 
     private var _binding: FragmentMainBinding? = null
 
@@ -109,6 +121,9 @@ class MainFragment : BaseFragment() {
 
             exitAppButton.setOnClickListener {
                 showExitConfirmationDialog()
+            }
+            historyButton.setOnClickListener{
+                findNavController().navigate(R.id.action_history)
             }
         }
     }
@@ -222,6 +237,9 @@ class MainFragment : BaseFragment() {
             firstShotTime = 0L
             totalPauseTime = 0L
             binding.saveDataButton.visibility = View.VISIBLE
+            binding.saveDataButton.setOnClickListener{
+                binding.saveDataButton.visibility = View.GONE
+            }
 
         } else {
             Log.d(mainTAG, "Recording already stopped.")

@@ -17,4 +17,6 @@
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     <string name="info_icon_description">Opis ikony informacji</string>
+    <string name="historia">HISTORIA</string>
+    <string name="main">MAIN</string>
 </resources>
