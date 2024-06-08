@@ -25,16 +25,13 @@ import com.example.aplikacja.timetoshot.databinding.FragmentMainBinding
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.RECORD_AUDIO)
 
@@ -54,8 +51,8 @@ class MainFragment : BaseFragment() {
         val data: Timestamp? = null,
         val firstShotTime: Long? = null,
         val recordTime: Long? = null,
-        val numberOfShots: Int? = null,
-        val avgShotsPerTime: Long? = null
+        val numberOfShots: Long? = null,
+        val avgTimePerShot: Double? = null
     )
 
     private var _binding: FragmentMainBinding? = null
@@ -212,7 +209,7 @@ class MainFragment : BaseFragment() {
                 firstShotTime-=startTime}
             else firstShotTime=0L
             binding.result.text = "Record time: $recordTime ms\n First shot time: $firstShotTime ms\n Shot counter: $shotCounter"
-            val avgShotPerTime=shotCounter/recordTime
+            val avgShotPerTime= recordTime.toDouble() / shotCounter.toDouble()
             val shot=Shots(Timestamp.now(),firstShotTime,recordTime,shotCounter,avgShotPerTime)
             db.collection("shots")
                 .add(shot).addOnSuccessListener { documentReference ->
@@ -221,7 +218,7 @@ class MainFragment : BaseFragment() {
                 .addOnFailureListener { e ->
                     println("Error adding document $e")
                 }
-            shotCounter = 0
+            shotCounter = 0L
             firstShotTime = 0L
             totalPauseTime = 0L
             binding.saveDataButton.visibility = View.VISIBLE
@@ -232,7 +229,7 @@ class MainFragment : BaseFragment() {
     }
 
     private var firstShotTime = 0L
-    private var shotCounter = 0
+    private var shotCounter = 0L
     private fun recordAudio(bufferSize: Int) {
         val buffer = ShortArray(bufferSize / 2)
         while (isRecording) {
@@ -247,7 +244,7 @@ class MainFragment : BaseFragment() {
         }
     }
 
-    private fun calculateRMS(buffer: ShortArray): Pair<Long, Int> {
+    private fun calculateRMS(buffer: ShortArray): Pair<Long, Long> {
         var sum = 0.0
         for (sample in buffer) {
             sum += sample * sample
