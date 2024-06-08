@@ -20,5 +20,19 @@
         <action
             android:id="@+id/action_emailpassword"
             app:destination="@id/EmailPasswordFragment"/>
+        <action
+            android:id="@+id/action_history"
+            app:destination="@id/HistoryFragment"/>
+    </fragment>
+    <fragment
+        android:id="@+id/HistoryFragment"
+        android:name="com.example.aplikacja.timetoshot.kotlin.HistoryFragment"
+        tools:layout="@layout/fragment_history">
+        <action
+            android:id="@+id/action_emailpassword"
+            app:destination="@id/EmailPasswordFragment"/>
+        <action
+            android:id="@+id/action_main"
+            app:destination="@id/MainFragment"/>
     </fragment>
 </navigation>
